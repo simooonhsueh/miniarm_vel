@@ -48,7 +48,7 @@ private:
   float linear_thresh_mm_ = 0.15f;    // 0.15 mm
   float joint_speed_max_  = M_PI/3;  // 每關節安全上限(rad/s) ~60°/s
 
-  // DH 參數（依你提供的「小手臂」）
+  // DH Table（依你提供的「小手臂」）
   float a_[6]     = {0, 0, 24.5f, 0, 0, 0};         // (mm)
   float d_[6]     = {0, 0, 0, 30.4f, 0, 0};         // (mm)
   float alpha_[6] = {0, -M_PI/2, 0, -M_PI/2, M_PI/2, -M_PI/2};

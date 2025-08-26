@@ -30,7 +30,9 @@ int main(int argc, char **argv) {
     // 初始化 serial
     arduino_serial.setPort(port);
     arduino_serial.setBaudrate(baud_rate);
-    arduino_serial.setTimeout(serial::Timeout::simpleTimeout(1000));
+    // arduino_serial.setTimeout(serial::Timeout::simpleTimeout(1000));
+    serial::Timeout to = serial::Timeout::simpleTimeout(1000);
+    arduino_serial.setTimeout(to);
     try {
         arduino_serial.open();
     } catch (serial::IOException &e) {

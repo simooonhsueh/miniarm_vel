@@ -1,6 +1,7 @@
 #include "ros/ros.h"
 #include "miniarm_vel/MoveArm.h"
 #include <iostream>
+// 0826
 
 int main(int argc, char **argv)
 {

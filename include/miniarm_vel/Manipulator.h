@@ -1,6 +1,7 @@
 #pragma once
 #include <Eigen/Dense>
 #include "../MotorUnion/MotorUnion.h"
+// 0826
 
 // Manipulator 繼承 MotorUnion
 class Manipulator : public MotorUnion {

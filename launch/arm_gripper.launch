@@ -1,0 +1,8 @@
+<launch>
+    <!-- 啟動 arm_server node -->
+    <node name="arm_server" pkg="miniarm_vel" type="arm_server" output="screen" />
+
+    <!-- 啟動 gripper_control_server node -->
+    <node name="gripper_control_server" pkg="miniarm_vel" type="gripper_control_server" output="screen" />
+
+</launch>

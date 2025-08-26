@@ -5,6 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  serial
   message_generation
 )
 
@@ -12,11 +13,13 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   MoveArm.srv
+  ServoControl.srv
 )
 
 generate_messages(
   DEPENDENCIES
   std_msgs
+  geometry_msgs
 )
 
 ## catkin package
@@ -36,7 +39,7 @@ include_directories(
 
 add_subdirectory(MotorUnion)
 
-## manipulator library（把 MotorUnion.cpp 加進來）
+## manipulator library
 add_library(manipulator
   src/Manipulator.cpp
 )
@@ -68,4 +71,13 @@ target_link_libraries(arm_client
   MotorUnion
 )
 add_dependencies(arm_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+## gripper_control_server
+add_executable(gripper_control_server src/gripper_control_server.cpp)
+target_link_libraries(gripper_control_server
+  manipulator
+  ${catkin_LIBRARIES}
+  MotorUnion
+)
+add_dependencies(gripper_control_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 

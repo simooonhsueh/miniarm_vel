@@ -1,0 +1,14 @@
+# 忽略編譯產物
+build/
+devel/
+install/
+logs/
+
+# 忽略 IDE 設定檔
+.vscode/
+.idea/
+
+# Python 編譯檔
+__pycache__/
+*.pyc
+

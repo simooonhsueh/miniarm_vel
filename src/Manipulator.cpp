@@ -190,7 +190,7 @@ bool Manipulator::stepToward(float ox_deg, float oy_deg, float oz_deg,
   // Communication set_motor_velocity////////////////////////////////////
   for (int i = 0; i < 6; i++) {
       double motor_speed = qdot(i) * 60.0 / (2*M_PI); // rad/s → RPM
-      SetMotor_Velocity(1 + i, motor_speed);
+      SetMotor_Velocity(i, motor_speed);
   }
   ///////////////////////////////////////////////////////////////////////
 

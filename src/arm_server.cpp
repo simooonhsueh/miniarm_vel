@@ -23,7 +23,6 @@ bool moveCallback(miniarm_vel::MoveArm::Request &req,
         ROS_WARN("Failed to call gripper open service");
     }
     //
-
     bool reached = false;
     int max_steps = 5000;
 
@@ -50,7 +49,7 @@ bool moveCallback(miniarm_vel::MoveArm::Request &req,
 
     } else {
         res.success = false;
-        res.message = "Failed to reach target within step limit.";
+        res.message = " Failed to reach target within step limit.";
         ROS_WARN("Failed to reach target.");
     }
 
@@ -64,9 +63,29 @@ int main(int argc, char **argv)
 
     Manipulator arm;
     g_arm = &arm;
+    // initialize to home position//////////////////////////////(08/29)
+    Eigen::Matrix<float,3,1> home_position = g_arm->Home_Position();
 
-    // 建立 gripper_control client
-    // 在 main 裡初始化 client
+    ROS_INFO_STREAM("Home position : x=" << home_position(0) 
+                                << " y=" << home_position(1) 
+                                << " z=" << home_position(2));
+
+    bool reached = false;
+    int max_steps = 5000;
+
+    for (int i = 0; ros::ok() && i < max_steps; ++i) {
+        reached = ag_arm->stepToward(0, 0, 0, home_position(0), home_position(1), home_position(2));
+        ros::Duration(0.01).sleep();  // 100Hz
+        if (reached) break;
+    }
+    if (reached) {
+        ROS_INFO("Manipulator reached home position.");
+    } else {
+        ROS_WARN("Failed to reach home position within step limit.");
+    }
+    /////////////////////////////////////////////////////////////(08/29)
+
+    // 建立 gripper_control client, 在 main 裡初始化 client
     gripper_client = nh.serviceClient<miniarm_vel::ServoControl>("gripper_control");
 
     // 建立 move_arm server

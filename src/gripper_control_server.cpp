@@ -20,7 +20,8 @@ bool handle_gripper_control(miniarm_vel::ServoControl::Request &req,
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "gripper_control_server");  //node name gripper_control_server
-    ros::NodeHandle nh("~");
+    ros::NodeHandle nh; // global //08/31
+    
 
     std::string port;
     int baud_rate;
@@ -48,7 +49,9 @@ int main(int argc, char **argv) {
     ROS_INFO("Serial port %s opened at %d baud.", port.c_str(), baud_rate);
 
     // 建立 gripper_control server
-    ros::ServiceServer service = nh.advertiseService("gripper_control", handle_gripper_control);
+    ros::ServiceServer gripper_service = nh.advertiseService("/gripper_control", handle_gripper_control);
+    // ros::ServiceServer service = nh.advertiseService("gripper_control", handle_gripper_control);
+    
     ROS_INFO("Gripper Control Server ready.");
 
     ros::spin();

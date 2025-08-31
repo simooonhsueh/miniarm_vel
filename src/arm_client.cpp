@@ -8,7 +8,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "arm_client");
     ros::NodeHandle nh;
 
-    ros::ServiceClient client = nh.serviceClient<miniarm_vel::MoveArm>("move_arm");
+    ros::ServiceClient arm_client = nh.serviceClient<miniarm_vel::MoveArm>("move_arm");
 
     while (ros::ok()) {
         float x, y, z;

@@ -46,8 +46,8 @@ private:
                                     float lambda);
 
   // 內部狀態
-  Eigen::Matrix<float,6,1> q_;             // 六關節角度 (rad)
-  Eigen::Matrix<float,6,6> J_;             // Jacobian（上=angular, 下=linear）
+  Eigen::Matrix<float,6,1> q_;                           // 六關節角度 (rad)
+  Eigen::Matrix<float,6,6> Jacobian_matrix_;             // Jacobian（上=angular, 下=linear）
   Eigen::Matrix<float,3,1> current_position_;
   Eigen::Matrix<float,3,1> current_orientation_;
 
@@ -55,8 +55,8 @@ private:
   float dt_               = 0.01f;   // 內部離散步長（秒）
   float vel_gain_         = 5.0f;    // 比例增益（對 end-effector 速度）
   float lambda_dls_       = 0.05f;   // DLS 阻尼，避免奇異點暴衝
-  float angular_thresh_   = 5 * M_PI/ 180.0f; // 5°
-  float linear_thresh_mm_ = 0.15f;    // 0.15 mm
+  float angular_thresh_   = 10 * M_PI/ 180.0f; // 10°
+  float linear_thresh_mm_ = 0.15f;   // 0.15 mm
   float joint_speed_max_  = M_PI/3;  // 每關節安全上限(rad/s) ~60°/s
 
   Eigen::Matrix<float,6,1> q_home_ = (Eigen::Matrix<float,6,1>() <<

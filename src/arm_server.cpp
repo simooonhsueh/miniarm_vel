@@ -4,10 +4,9 @@
 #include "miniarm_vel/ServoControl.h"
 #include <iostream>
 // 0826
-
+float rad2deg = 180.0f / M_PI;
 Manipulator* g_arm = nullptr;
-// client for servo
-ros::ServiceClient gripper_client;  
+
 
 bool moveCallback(miniarm_vel::MoveArm::Request &req,
                   miniarm_vel::MoveArm::Response &res)
@@ -27,7 +26,16 @@ bool moveCallback(miniarm_vel::MoveArm::Request &req,
     int max_steps = 5000;
 
     for (int i = 0; ros::ok() && i < max_steps; ++i) {
+
+        Eigen::Matrix<float,6,1> q = g_arm->currentQ(); // get current joint angles
+
         reached = g_arm->stepToward(0, 0, 0, req.x, req.y, req.z);
+        if(i % 10 == 0){
+        ROS_INFO("Joint angles: \n[%.3f, %.3f, %.3f, %.3f, %.3f, %.3f](deg)",
+         q(0)* rad2deg, q(1)* rad2deg, q(2)* rad2deg,
+         q(3)* rad2deg, q(4)* rad2deg, q(5)* rad2deg);
+        }
+
         ros::Duration(0.01).sleep(); // 100 Hz
         if (reached) break;
     }
@@ -74,7 +82,14 @@ int main(int argc, char **argv)
     int max_steps = 5000;
 
     for (int i = 0; ros::ok() && i < max_steps; ++i) {
-        reached = ag_arm->stepToward(0, 0, 0, home_position(0), home_position(1), home_position(2));
+
+        Eigen::Matrix<float,6,1> q = g_arm->currentQ(); // get current joint angles
+        reached = g_arm->stepToward(0, 0, 0, home_position(0), home_position(1), home_position(2));
+        if(i % 10 == 0){
+        ROS_INFO("Joint angles: \n[%.3f, %.3f, %.3f, %.3f, %.3f, %.3f](deg)",
+         q(0)* rad2deg, q(1)* rad2deg, q(2)* rad2deg,
+         q(3)* rad2deg, q(4)* rad2deg, q(5)* rad2deg);
+        }
         ros::Duration(0.01).sleep();  // 100Hz
         if (reached) break;
     }
@@ -83,13 +98,13 @@ int main(int argc, char **argv)
     } else {
         ROS_WARN("Failed to reach home position within step limit.");
     }
-    /////////////////////////////////////////////////////////////(08/29)
+    /////////////////////////////////////////////////////////////
 
     // 建立 gripper_control client, 在 main 裡初始化 client
-    gripper_client = nh.serviceClient<miniarm_vel::ServoControl>("gripper_control");
+    ros::ServiceClient gripper_client = nh.serviceClient<miniarm_vel::ServoControl>("/gripper_control"); //08/31
 
-    // 建立 move_arm server
-    ros::ServiceServer service = nh.advertiseService("move_arm", moveCallback);
+    // 建立 move_arm server, 在 main 裡初始化 server
+    ros::ServiceServer arm_service = nh.advertiseService("move_arm", moveCallback);
     //
     ROS_INFO("Arm server ready. Waiting for client requests...");
     ros::spin();

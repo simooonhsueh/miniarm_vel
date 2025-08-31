@@ -10,7 +10,7 @@
 // Initialize 物件
 Manipulator::Manipulator()
   : MotorUnion({1, 2, 3, 4, 5, 6}, {"Mx106","Mx106","Mx106","Mx106","Mx106","Mx106"}),
-    pro_radpersec2scale_(60.0 / (2 * M_PI) / 0.01)
+    pro_radpersec2scale_(60.0 / (2 * M_PI) / 0.05)
 {
   q_.setZero();
   current_position_.setZero();
@@ -32,7 +32,7 @@ void Manipulator::Stop() {
   std::cout << "Manipulator stopped (torque disabled)" << std::endl;
 }
 
-// six angles for the motors //"08/28"
+// Six angles for the motors //"08/28"
 void Manipulator::UpdateJointAnglesFromMotors()
 {
     // 假設回傳單位是「度」，轉成「弧度」存進 q_
@@ -98,7 +98,7 @@ Eigen::Matrix<float,6,1> Manipulator::solveDLS(const Eigen::Matrix<float,6,6>& J
 void Manipulator::computeKinematicsAndJacobian() {
   float J0=q_(0), J1=q_(1), J2=q_(2), J3=q_(3), J4=q_(4), J5=q_(5);
 
-  Eigen::Matrix<float,4,4> T01 = T(J0, alpha_[0], a_[0], d_[0]);
+  Eigen::Matrix<float,4,4> T01 = B0 * T(J0, alpha_[0], a_[0], d_[0]); //08/31
   Eigen::Matrix<float,4,4> T12 = T(J1, alpha_[1], a_[1], d_[1]);
   Eigen::Matrix<float,4,4> T23 = T(J2, alpha_[2], a_[2], d_[2]);
   Eigen::Matrix<float,4,4> T34 = T(J3, alpha_[3], a_[3], d_[3]);
@@ -118,21 +118,19 @@ void Manipulator::computeKinematicsAndJacobian() {
         0,0,1,end_length_,    // 末端執行器長度
         0,0,0,1;
 
-  Eigen::Matrix<float,4,4> T02=T01*T12, T03=T02*T23, T04=T03*T34,
-                           T05=T04*T45, T06=T05*T56;
-                           // T06 = B0 * T06 ;
-                           T06 = B0 * T06 * E6 ;
+  Eigen::Matrix<float,4,4> T02 = T01 * T12, T03=  T02 * T23, T04 = T03 * T34,
+                           T05 = T04 * T45, T06 = T05 * T56;
+                           T06 = T06 * E6 ; // 08/31
                         
 
 
-  // 末端姿態（ZYX Euler，與你一致）
+  // 末端姿態（ZYX Euler）
   float oz = atan2(T06(1,0), T06(0,0));
   float oy = atan2(-T06(2,0), (T06(0,0)*cosf(oz) + T06(1,0)*sinf(oz)));
   float ox = atan2((T06(0,2)*sinf(oz) - T06(1,2)*cosf(oz)), (T06(1,1)*cosf(oz) - T06(0,1)*sinf(oz)));
   current_orientation_ << ox, oy, oz;
   current_position_ << T06(0,3), T06(1,3), T06(2,3); // (mm)
 
-  // 取 Z 軸與各原點位置
   Eigen::Vector3f P00(0,0,0),
                   P01(T01(0,3),T01(1,3),T01(2,3)),
                   P02(T02(0,3),T02(1,3),T02(2,3)),
@@ -155,8 +153,8 @@ void Manipulator::computeKinematicsAndJacobian() {
   Eigen::Vector3f Jv04 = Z04.cross(P06-P04);
   Eigen::Vector3f Jv05 = Z05.cross(P06-P05);
 
-  // 上=角速度， 下=線速度（配合你原本 end-effector 速度排列）
-  J_ <<
+  // 上=角速度， 下=線速度
+  Jacobian_matrix_ <<
     Z00(0), Z01(0), Z02(0), Z03(0), Z04(0), Z05(0),
     Z00(1), Z01(1), Z02(1), Z03(1), Z04(1), Z05(1),
     Z00(2), Z01(2), Z02(2), Z03(2), Z04(2), Z05(2),
@@ -171,18 +169,19 @@ bool Manipulator::stepToward(float ox_deg, float oy_deg, float oz_deg,
   Eigen::Vector3f target_o(deg2rad(ox_deg), deg2rad(oy_deg), deg2rad(oz_deg));
   Eigen::Vector3f target_p(px, py, pz);
   
-  // 更新現在的六軸角度, 更新到q_Eigen::Matrix<float,6,1> "08/28"
+  // 更新現在的六軸角度, update q_"08/28"
   UpdateJointAnglesFromMotors();
-  // 更新目前 kinematics/Jacobian
+  // 更新目前 kinematics/Jacobian 
+  //update current_position_ , current_orientation_ & Jacobian_matrix_
   computeKinematicsAndJacobian();
 
   float ang_err = rmsErr(target_o, current_orientation_);
   float lin_err = rmsErr(target_p, current_position_);
 
-  //if (ang_err < angular_thresh_ && lin_err < linear_thresh_mm_) return true;
-  if (lin_err < linear_thresh_mm_) return true;
+  if (ang_err < angular_thresh_ && lin_err < linear_thresh_mm_) return true;
+  // if (lin_err < linear_thresh_mm_) return true;
 
-  static float accel_factor  = 0.8f; 
+  static float accel_factor  = 1.0f; 
   static int   accel_counter = 0;
 
   // P 控制：end-effector 速度（角、線）
@@ -197,7 +196,7 @@ bool Manipulator::stepToward(float ox_deg, float oy_deg, float oz_deg,
 
   // Joint 速度：DLS 解，避免奇異點
   // Rotation speed
-  Eigen::Matrix<float,6,1> qdot = solveDLS(J_, xdot, lambda_dls_);
+  Eigen::Matrix<float,6,1> qdot = solveDLS(Jacobian_matrix_, xdot, lambda_dls_);
 
   // upper bond
   float max_abs = qdot.cwiseAbs().maxCoeff();
@@ -210,7 +209,7 @@ bool Manipulator::stepToward(float ox_deg, float oy_deg, float oz_deg,
   }
 
   // 積分更新
-  q_ +=  qdot * dt_;
+  // q_ +=  qdot * dt_; //運用馬達實際迴授來做計算 08/31
 
   // Communication set_motor_velocity////////////////////////////////////
   for (int i = 0; i < 6; i++) {

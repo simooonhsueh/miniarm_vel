@@ -20,7 +20,7 @@ int main(int argc, char **argv)
         srv.request.y = y;
         srv.request.z = z;
 
-        if (client.call(srv)) {
+        if (arm_client.call(srv)) {
             ROS_INFO("Response: success=%d, message=%s", srv.response.success, srv.response.message.c_str());
         } else {
             ROS_ERROR("Failed to call service move_arm");

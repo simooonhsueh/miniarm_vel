@@ -6,6 +6,7 @@
 // 0826
 float rad2deg = 180.0f / M_PI;
 Manipulator* g_arm = nullptr;
+ros::ServiceClient gripper_client;
 
 
 bool moveCallback(miniarm_vel::MoveArm::Request &req,
@@ -27,7 +28,7 @@ bool moveCallback(miniarm_vel::MoveArm::Request &req,
 
     for (int i = 0; ros::ok() && i < max_steps; ++i) {
 
-        Eigen::Matrix<float,6,1> q = g_arm->currentQ(); // get current joint angles
+        Eigen::Matrix<float,6,1> q = g_arm->currentQ(); // get current joint angles //(rad)
 
         reached = g_arm->stepToward(0, 0, 0, req.x, req.y, req.z);
         if(i % 10 == 0){
@@ -72,23 +73,26 @@ int main(int argc, char **argv)
     Manipulator arm;
     g_arm = &arm;
     // initialize to home position//////////////////////////////(08/29)
-    Eigen::Matrix<float,3,1> home_position = g_arm->Home_Position();
-
-    ROS_INFO_STREAM("Home position : x=" << home_position(0) 
-                                << " y=" << home_position(1) 
-                                << " z=" << home_position(2));
+    Eigen::Matrix<float,6,1> home_position = g_arm->Home_Position();
 
     bool reached = false;
-    int max_steps = 5000;
+    int max_steps = 12000;
 
     for (int i = 0; ros::ok() && i < max_steps; ++i) {
 
-        Eigen::Matrix<float,6,1> q = g_arm->currentQ(); // get current joint angles
-        reached = g_arm->stepToward(0, 0, 0, home_position(0), home_position(1), home_position(2));
-        if(i % 10 == 0){
-        ROS_INFO("Joint angles: \n[%.3f, %.3f, %.3f, %.3f, %.3f, %.3f](deg)",
-         q(0)* rad2deg, q(1)* rad2deg, q(2)* rad2deg,
-         q(3)* rad2deg, q(4)* rad2deg, q(5)* rad2deg);
+        g_arm->UpdateJointAnglesFromMotors();// "08/28"
+        g_arm->debugKinematics();
+        reached = g_arm->stepToward(home_position(3)* rad2deg, home_position(4)* rad2deg, home_position(5)* rad2deg, home_position(0), home_position(1), home_position(2));
+        if(i % 50 == 0){
+        Eigen::Matrix<float,6,1> q = g_arm->currentQ(); // get current joint angles //rad
+        ROS_INFO("Joint angles: \n[%.2f, %.2f, %.2f, %.2f, %.2f, %.2f](deg)",
+            q(0)* rad2deg, q(1)* rad2deg, q(2)* rad2deg,
+            q(3)* rad2deg, q(4)* rad2deg, q(5)* rad2deg);
+        Eigen::Matrix<float,6,1> currentt_position = g_arm->Endeffector_Position(q(0), q(1), q(2), q(3), q(4), q(5));
+        ROS_INFO("Current position:    [%.2f, %.2f, %.2f]mm", currentt_position(0), currentt_position(1), currentt_position(2));  //0904_testing
+        ROS_INFO("Current orientation: [%.2f, %.2f, %.2f]deg", currentt_position(3)*rad2deg, currentt_position(4)*rad2deg, currentt_position(5)*rad2deg); //0904_testing
+        ROS_INFO("Initial position:    [%.2f, %.2f, %.2f]mm", home_position(0), home_position(1), home_position(2));
+        ROS_INFO("Initial orientation: [%.2f, %.2f, %.2f]deg", home_position(3)*rad2deg, home_position(4)*rad2deg, home_position(5)*rad2deg);
         }
         ros::Duration(0.01).sleep();  // 100Hz
         if (reached) break;
@@ -101,7 +105,7 @@ int main(int argc, char **argv)
     /////////////////////////////////////////////////////////////
 
     // 建立 gripper_control client, 在 main 裡初始化 client
-    ros::ServiceClient gripper_client = nh.serviceClient<miniarm_vel::ServoControl>("/gripper_control"); //08/31
+    gripper_client = nh.serviceClient<miniarm_vel::ServoControl>("/gripper_control"); //08/31
 
     // 建立 move_arm server, 在 main 裡初始化 server
     ros::ServiceServer arm_service = nh.advertiseService("move_arm", moveCallback);
@@ -111,3 +115,4 @@ int main(int argc, char **argv)
 
     return 0;
 }
+

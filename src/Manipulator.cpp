@@ -146,6 +146,11 @@ Eigen::Matrix<float,6,1> Manipulator::solveDLS(const Eigen::Matrix<float,6,6>& J
 void Manipulator::computeKinematicsAndJacobian() {
   float J0=q_(0), J1=q_(1), J2=q_(2), J3=q_(3), J4=q_(4), J5=q_(5);
 
+  // ===== Debug: 輸出 joint angles =====
+  std::cout << "[Joint angles rad] "
+            << J0 << ", " << J1 << ", " << J2 << ", "
+            << J3 << ", " << J4 << ", " << J5 << std::endl;
+
     Eigen::Matrix4f B0;
   B0 << 1,0,0,0,
         0,1,0,0,
@@ -166,18 +171,15 @@ void Manipulator::computeKinematicsAndJacobian() {
   Eigen::Matrix<float,4,4> T56 =      T(J5 + theta_offset_[5], alpha_[5], a_[5], d_[5]);
 
   // 先轉成 Eigen 矩陣
-
-
   Eigen::Matrix<float,4,4> T02 = T01 * T12, T03=  T02 * T23, T04 = T03 * T34,
                            T05 = T04 * T45, T06 = T05 * T56;
                            T06 = T06 * E6 ; // 08/31
+  std::cout << "[T06] = \n" << T06 << std::endl;
   Eigen::Matrix3f R = T06.block<3,3>(0,0);
   Eigen::Vector3f ypr = R.eulerAngles(2,1,0); // [yaw, pitch, roll] 0905
   float oz = ypr(0);
   float oy = ypr(1);
   float ox = ypr(2);   
-  Eigen::Quaternionf q_current(R); //0906
-  q_current.normalize();    
   current_orientation_q_ = Eigen::Quaternionf(R);
   current_orientation_q_.normalize();     
   // 末端姿態（ZYX Euler）
@@ -186,6 +188,9 @@ void Manipulator::computeKinematicsAndJacobian() {
   // float ox = atan2((T06(0,2)*sinf(oz) - T06(1,2)*cosf(oz)), (T06(1,1)*cosf(oz) - T06(0,1)*sinf(oz)));
   current_orientation_ << ox, oy, oz; // (rad)
   current_position_    << T06(0,3), T06(1,3), T06(2,3); // (mm)
+
+  std::cout << "[EE pos] " << current_position_.transpose() << " (mm)" << std::endl;
+  std::cout << "[EE ori] roll=" << ox << ", pitch=" << oy << ", yaw=" << oz << " (rad)" << std::endl;
 
   Eigen::Vector3f P00(0,0,base_height_),
                   P01(T01(0,3),T01(1,3),T01(2,3)),
@@ -216,7 +221,21 @@ void Manipulator::computeKinematicsAndJacobian() {
         Jv00(0), Jv01(0), Jv02(0), Jv03(0), Jv04(0), Jv05(0),  // vx
         Jv00(1), Jv01(1), Jv02(1), Jv03(1), Jv04(1), Jv05(1),  // vy
         Jv00(2), Jv01(2), Jv02(2), Jv03(2), Jv04(2), Jv05(2);  // vz
+  std::cout << "[Z axes]\n" 
+            << Z00.transpose() << "\n"
+            << Z01.transpose() << "\n"
+            << Z02.transpose() << "\n"
+            << Z03.transpose() << "\n"
+            << Z04.transpose() << "\n"
+            << Z05.transpose() << std::endl;
 
+  std::cout << "[Jv columns]\n"
+            << Jv00.transpose() << "\n"
+            << Jv01.transpose() << "\n"
+            << Jv02.transpose() << "\n"
+            << Jv03.transpose() << "\n"
+            << Jv04.transpose() << "\n"
+            << Jv05.transpose() << std::endl;
   // Eigen::JacobiSVD<Eigen::MatrixXf> svd(Jacobian_matrix_);
   // float sigma_min = svd.singularValues().minCoeff();
   // float sigma_max = svd.singularValues().maxCoeff();

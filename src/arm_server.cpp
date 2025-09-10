@@ -36,8 +36,9 @@ bool moveCallback(miniarm_vel::MoveArm::Request &req,
         ROS_INFO("Joint angles: \n[%.3f, %.3f, %.3f, %.3f, %.3f, %.3f](deg)",
          q(0)* rad2deg, q(1)* rad2deg, q(2)* rad2deg,
          q(3)* rad2deg, q(4)* rad2deg, q(5)* rad2deg);
+         ROS_INFO("Linear error: [%.2f]mm, Angular error: [%.2f]deg", lin_ang_error[0] , lin_ang_error[1] * rad2deg);
         }
-        ROS_INFO("Linear error: [%.2f]mm, Angular error: [%.2f]deg", lin_ang_error[0] , lin_ang_error[1] * rad2deg);
+        
 
         ros::Duration(0.01).sleep(); // 100 Hz
         if (reached) break;
@@ -82,7 +83,6 @@ int main(int argc, char **argv)
 
     for (int i = 0; ros::ok() && i < max_steps; ++i) {
 
-        g_arm->UpdateJointAnglesFromMotors();// "08/28"
         // g_arm->debugKinematics();
         reached = g_arm->stepToward(home_position(3)* rad2deg, home_position(4)* rad2deg, home_position(5)* rad2deg, home_position(0), home_position(1), home_position(2));
         Eigen::Vector2f lin_ang_error = g_arm->currentError();

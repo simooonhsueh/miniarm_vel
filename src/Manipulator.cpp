@@ -247,6 +247,7 @@ bool Manipulator::stepToward(float ox_deg, float oy_deg, float oz_deg,
   float ang_err = 2.0f * std::acos(std::abs(q_err.w())); //0906
   // float ang_err = rmsErr(target_o, current_orientation_);
   float lin_err = rmsErr(target_p, current_position_);
+  
   lin_ang_error [0]= lin_err;
   lin_ang_error [1]= ang_err;
 

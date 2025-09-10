@@ -56,18 +56,18 @@ Eigen::Matrix<float,4,4> Manipulator::T(float th, float al, float a, float d) {
   Eigen::Matrix<float,4,4> m;
 
   // Transform matrix for standard DH
-  // m << cosf(th), -cosf(al)*sinf(th),  sinf(al)*sinf(th), a*cosf(th),
-  //      sinf(th),  cosf(al)*cosf(th), -sinf(al)*cosf(th), a*sinf(th),
-  //      0,         sinf(al),           cosf(al),          d,
-  //      0,         0,                  0,                 1;
-  // return m;
-
-  // Transform matrix for CRAIG DH //0903
-  m <<  cos(th),        -sin(th),          0,              a,
-        sin(th)*cos(al), cos(th)*cos(al), -sin(al),      -sin(al)*d, 
-        sin(th)*sin(al), cos(th)*sin(al),  cos(al),      -cos(al)*d,
-        0,               0,                0,              1;
+  m << cosf(th), -cosf(al)*sinf(th),  sinf(al)*sinf(th), a*cosf(th),
+       sinf(th),  cosf(al)*cosf(th), -sinf(al)*cosf(th), a*sinf(th),
+       0,         sinf(al),           cosf(al),          d,
+       0,         0,                  0,                 1;
   return m;
+
+  //Transform matrix for CRAIG DH //0903
+  // m <<  cos(th),        -sin(th),          0,             a,
+  //       sin(th)*cos(al), cos(th)*cos(al), -sin(al),     -sin(al)*d, 
+  //       sin(th)*sin(al), cos(th)*sin(al),  cos(al),     -cos(al)*d,
+  //       0,               0,                0,             1;
+  // return m;
 }
 
 
@@ -147,9 +147,9 @@ void Manipulator::computeKinematicsAndJacobian() {
   float J0=q_(0), J1=q_(1), J2=q_(2), J3=q_(3), J4=q_(4), J5=q_(5);
 
   // ===== Debug: 輸出 joint angles =====
-  std::cout << "[Joint angles rad] "
-            << J0 << ", " << J1 << ", " << J2 << ", "
-            << J3 << ", " << J4 << ", " << J5 << std::endl;
+  // std::cout << "[Joint angles rad] "
+  //           << J0 << ", " << J1 << ", " << J2 << ", "
+  //           << J3 << ", " << J4 << ", " << J5 << std::endl;
 
     Eigen::Matrix4f B0;
   B0 << 1,0,0,0,
@@ -174,7 +174,7 @@ void Manipulator::computeKinematicsAndJacobian() {
   Eigen::Matrix<float,4,4> T02 = T01 * T12, T03=  T02 * T23, T04 = T03 * T34,
                            T05 = T04 * T45, T06 = T05 * T56;
                            T06 = T06 * E6 ; // 08/31
-  std::cout << "[T06] = \n" << T06 << std::endl;
+  // std::cout << "[T06] = \n" << T06 << std::endl;
   Eigen::Matrix3f R = T06.block<3,3>(0,0);
   Eigen::Vector3f ypr = R.eulerAngles(2,1,0); // [yaw, pitch, roll] 0905
   float oz = ypr(0);
@@ -189,10 +189,7 @@ void Manipulator::computeKinematicsAndJacobian() {
   current_orientation_ << ox, oy, oz; // (rad)
   current_position_    << T06(0,3), T06(1,3), T06(2,3); // (mm)
 
-  std::cout << "[EE pos] " << current_position_.transpose() << " (mm)" << std::endl;
-  std::cout << "[EE ori] roll=" << ox << ", pitch=" << oy << ", yaw=" << oz << " (rad)" << std::endl;
-
-  Eigen::Vector3f P00(0,0,base_height_),
+  Eigen::Vector3f P00(0,0,0),
                   P01(T01(0,3),T01(1,3),T01(2,3)),
                   P02(T02(0,3),T02(1,3),T02(2,3)),
                   P03(T03(0,3),T03(1,3),T03(2,3)),
@@ -221,26 +218,6 @@ void Manipulator::computeKinematicsAndJacobian() {
         Jv00(0), Jv01(0), Jv02(0), Jv03(0), Jv04(0), Jv05(0),  // vx
         Jv00(1), Jv01(1), Jv02(1), Jv03(1), Jv04(1), Jv05(1),  // vy
         Jv00(2), Jv01(2), Jv02(2), Jv03(2), Jv04(2), Jv05(2);  // vz
-  std::cout << "[Z axes]\n" 
-            << Z00.transpose() << "\n"
-            << Z01.transpose() << "\n"
-            << Z02.transpose() << "\n"
-            << Z03.transpose() << "\n"
-            << Z04.transpose() << "\n"
-            << Z05.transpose() << std::endl;
-
-  std::cout << "[Jv columns]\n"
-            << Jv00.transpose() << "\n"
-            << Jv01.transpose() << "\n"
-            << Jv02.transpose() << "\n"
-            << Jv03.transpose() << "\n"
-            << Jv04.transpose() << "\n"
-            << Jv05.transpose() << std::endl;
-  // Eigen::JacobiSVD<Eigen::MatrixXf> svd(Jacobian_matrix_);
-  // float sigma_min = svd.singularValues().minCoeff();
-  // float sigma_max = svd.singularValues().maxCoeff();
-  // std::cout << "[Jacobian] cond=" << sigma_max/sigma_min 
-  //           << ", sigma_min=" << sigma_min << std::endl;
 }
 
 bool Manipulator::stepToward(float ox_deg, float oy_deg, float oz_deg,
@@ -270,6 +247,8 @@ bool Manipulator::stepToward(float ox_deg, float oy_deg, float oz_deg,
   float ang_err = 2.0f * std::acos(std::abs(q_err.w())); //0906
   // float ang_err = rmsErr(target_o, current_orientation_);
   float lin_err = rmsErr(target_p, current_position_);
+  lin_ang_error [0]= lin_err;
+  lin_ang_error [1]= ang_err;
 
   // // === Debug A: 位置與姿態誤差 ===
   // std::cout << "[Err] lin=" << lin_err 

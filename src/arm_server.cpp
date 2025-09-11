@@ -30,7 +30,7 @@ bool moveCallback(miniarm_vel::MoveArm::Request &req,
 
         Eigen::Matrix<float,6,1> q = g_arm->currentQ(); // get current joint angles //(rad)
 
-        reached = g_arm->stepToward(0, 180, 0, req.x, req.y, req.z);
+        reached = g_arm->stepToward(0, 200, 0, req.x, req.y, req.z);
         Eigen::Vector2f lin_ang_error = g_arm->currentError();
         if(i % 50 == 0){
         ROS_INFO("Joint angles: \n[%.3f, %.3f, %.3f, %.3f, %.3f, %.3f](deg)",
@@ -92,10 +92,10 @@ int main(int argc, char **argv)
             q(0)* rad2deg, q(1)* rad2deg, q(2)* rad2deg,
             q(3)* rad2deg, q(4)* rad2deg, q(5)* rad2deg);
         Eigen::Matrix<float,6,1> currentt_position = g_arm->Endeffector_Position(q(0), q(1), q(2), q(3), q(4), q(5));
-        // ROS_INFO("Current position:    [%.2f, %.2f, %.2f]mm", currentt_position(0), currentt_position(1), currentt_position(2));  //0904_testing
-        // ROS_INFO("Current orientation: [%.2f, %.2f, %.2f]deg", currentt_position(3)*rad2deg, currentt_position(4)*rad2deg, currentt_position(5)*rad2deg); //0904_testing
-        // ROS_INFO("Initial position:    [%.2f, %.2f, %.2f]mm", home_position(0), home_position(1), home_position(2));
-        // ROS_INFO("Initial orientation: [%.2f, %.2f, %.2f]deg", home_position(3)*rad2deg, home_position(4)*rad2deg, home_position(5)*rad2deg);
+        ROS_INFO("Current position:    [%.2f, %.2f, %.2f]mm", currentt_position(0), currentt_position(1), currentt_position(2));  //0904_testing
+        ROS_INFO("Current orientation: [%.2f, %.2f, %.2f]deg", currentt_position(3)*rad2deg, currentt_position(4)*rad2deg, currentt_position(5)*rad2deg); //0904_testing
+        ROS_INFO("Initial position:    [%.2f, %.2f, %.2f]mm", home_position(0), home_position(1), home_position(2));
+        ROS_INFO("Initial orientation: [%.2f, %.2f, %.2f]deg", home_position(3)*rad2deg, home_position(4)*rad2deg, home_position(5)*rad2deg);
         ROS_INFO("Linear error: [%.2f]mm, Angular error: [%.2f]deg", lin_ang_error[0] , lin_ang_error[1] * rad2deg);
         }
         ros::Duration(0.01).sleep();  // 100Hz

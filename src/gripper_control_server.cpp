@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
 
     std::string port;
     int baud_rate;
-    nh.param<std::string>("serial_port", port, "/dev/ttyACM1");
+    nh.param<std::string>("serial_port", port, "/dev/ttyACM0");
     nh.param<int>("baud_rate", baud_rate, 115200);
 
     // 初始化 serial

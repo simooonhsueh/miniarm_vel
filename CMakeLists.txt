@@ -14,6 +14,7 @@ add_service_files(
   FILES
   MoveArm.srv
   ServoControl.srv
+  SendPosition.srv
 )
 
 generate_messages(
@@ -79,4 +80,13 @@ target_link_libraries(gripper_control_server
   MotorUnion
 )
 add_dependencies(gripper_control_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+## send_position_client //09/12
+add_executable(send_position_client src/send_position_client.cpp)
+target_link_libraries(send_position_client
+  manipulator
+  ${catkin_LIBRARIES}
+  MotorUnion
+)
+add_dependencies(send_position_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
